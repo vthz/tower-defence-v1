@@ -26,6 +26,28 @@ class GameMechanics:
         self.bullet_list = []
         self.last_shot_time = time.time()
         self.wave_count = 0
+        self.min_enemy, self.max_enemy = 10, 10
+        self.min_obstacles, self.max_obstacles = 0, 0
+
+    def generate_obstacles(self):
+        obstacle_list = []
+        total_obstacle = random.randint(self.min_obstacles, self.max_obstacles)
+        for i in range(total_obstacle):
+            obs_x = random.randint(0, s.WIDTH - s.BOX_WIDTH)
+            obs_y = random.randint(0, s.HEIGHT - s.BOX_HEIGHT)
+            obstacle = Obstacle(obs_x, obs_y, 1)
+            obstacle_list.append(obstacle)
+        return obstacle_list
+
+    def generate_enemies(self):
+        enemy_list = []
+        total_enemy = random.randint(self.min_enemy, self.max_enemy)
+        for i in range(total_enemy):
+            pos_x = random.randint(0, s.WIDTH - s.BOX_WIDTH)
+            pos_y = random.randint(-20, 10)
+            new_enemy = Enemy(pos_x, pos_y)
+            enemy_list.append(new_enemy)
+        return enemy_list
 
     def get_current_score(self):
         return self.current_score
@@ -34,7 +56,7 @@ class GameMechanics:
         mouse_pos_x, mouse_pos_y = pygame.mouse.get_pos()
         if pygame.mouse.get_pressed()[0] and time.time() - self.last_shot_time > s.RATE_OF_FIRE_per_min:
             bullet_speed = s.BULLET_VEL
-            bullet_velocity = calculate_bullet_velocity(
+            bullet_velocity = calculate_bullet_velocity_angle(
                 (weapon.rect.x + s.WEAPON_WIDTH // 2, weapon.rect.y + s.WEAPON_HEIGHT // 2),
                 (mouse_pos_x, mouse_pos_y), bullet_speed)
             bullet_angle = math.degrees(math.atan2(bullet_velocity[0], bullet_velocity[1]))
@@ -44,21 +66,21 @@ class GameMechanics:
             self.last_shot_time = time.time()
 
 
-def calculate_bullet_velocity(player_pos, mouse_pos, bullet_speed):
+def calculate_bullet_velocity_angle(player_pos, mouse_pos, bullet_speed):
     angle = math.atan2(mouse_pos[1] - player_pos[1], mouse_pos[0] - player_pos[0])
     vel_x = bullet_speed * math.cos(angle)
     vel_y = bullet_speed * math.sin(angle)
     return vel_x, vel_y
 
 
-def check_bullet_obstacle_collision(bullets, obstacles, gameObj):  # this function being used to determine
+def check_bullet_obstacle_collision(bullets, obstacles, game_mechanics_obj):  # this function being used to determine
     for bullet in bullets:
         for obstacle in obstacles:
             if bullet.rect.colliderect(obstacle.rect):
                 obstacle.hit_points -= bullet.total_damage
                 if obstacle.hit_points <= 0:
                     obstacles.remove(obstacle)
-                    gameObj.current_score += obstacle.destruction_points
+                    game_mechanics_obj.current_score += obstacle.destruction_points
                 bullets.remove(bullet)
                 return True
     return False
@@ -83,48 +105,26 @@ def check_player_enemy_collision(player, enemy_list):
             player.current_health -= enemy.max_damage
 
 
-def draw(player, weapon, bullet_list, obstacle_list, enemy_list, gameObj):
+def draw(player, weapon, bullet_list, obstacle_list, enemy_list, game_mechanics_obj):
     WIN.blit(WIN_BG, (0, 0))
-    score_text = FONT.render(f"$:{gameObj.current_score}", 1, "white")
+    score_text = FONT.render(f"$:{game_mechanics_obj.current_score}", 1, "white")
     WIN.blit(score_text, (10, 10))
-    # enemy_count_text = FONT.render(f"Enemy:{len(enemy_list)}  Wave:{gameObj.wave_count}", 1, "white")
+    # enemy_count_text = FONT.render(f"Enemy:{len(enemy_list)}  Wave:{game_mechanics_obj.wave_count}", 1, "white")
     # WIN.blit(enemy_count_text, ((s.WIDTH // 2 - enemy_count_text.get_width() // 2), 10))
     health_text = FONT.render(f"{max(0, player.current_health)}", 1, "white")
     WIN.blit(health_text, (s.WIDTH - len(str(player.current_health) * 20), 10))
     WIN.blit(HEART_ICON, (s.WIDTH - len(str(player.current_health) * 20) - 25, 25))
-    pygame.draw.rect(WIN, "white", player)
+    pygame.draw.rect(WIN, player.player_color, player)
     pygame.draw.rect(WIN, "grey", weapon)
 
     for obstacle in obstacle_list:
         pygame.draw.rect(WIN, "brown", obstacle.rect)
     for bullet in bullet_list:
-        pygame.draw.rect(WIN, "yellow", bullet.rect)
+        pygame.draw.rect(WIN, "orange", bullet.rect)
     for enemy in enemy_list:
         pygame.draw.rect(WIN, "red", enemy.rect)
 
     pygame.display.update()
-
-
-def generate_obstacles(min_enemy, max_enemy):
-    obstacle_list = []
-    total_obstacle = random.randint(min_enemy, max_enemy)
-    for i in range(total_obstacle):
-        obs_x = random.randint(0, s.WIDTH - s.BOX_WIDTH)
-        obs_y = random.randint(0, s.HEIGHT - s.BOX_HEIGHT)
-        obstacle = Obstacle(obs_x, obs_y, 1)
-        obstacle_list.append(obstacle)
-    return obstacle_list
-
-
-def generate_enemies(min_enemy, max_enemy):
-    enemy_list = []
-    total_enemy = random.randint(min_enemy, max_enemy)
-    for i in range(total_enemy):
-        pos_x = random.randint(0, s.WIDTH - s.BOX_WIDTH)
-        pos_y = random.randint(-20, 10)
-        obstacle = Enemy(pos_x, pos_y, 1)
-        enemy_list.append(obstacle)
-    return enemy_list
 
 
 def main():
@@ -132,11 +132,9 @@ def main():
     clock = pygame.time.Clock()
     player = Player(s.WIDTH // 2 - s.PLAYER_WIDTH // 2, s.HEIGHT - s.PLAYER_HEIGHT, s.PLAYER_VEL)
     weapon = Weapon(player.rect.x, player.rect.y, player.vel)
-    min_enemy, max_enemy = 10, 10
-    obstacle_list = generate_obstacles(0, 0)
-    enemy_list = generate_enemies(min_enemy, max_enemy)
-
-    gameObj = GameMechanics()
+    game_mechanics_obj = GameMechanics()
+    obstacle_list = game_mechanics_obj.generate_obstacles()
+    enemy_list = game_mechanics_obj.generate_enemies()
 
     while game_active:
         clock.tick(s.FPS)
@@ -148,23 +146,23 @@ def main():
         player.move_player()
         weapon.rect.x = player.rect.x
         weapon.rect.y = player.rect.y
-        gameObj.bullet_logic(weapon)
+        game_mechanics_obj.bullet_logic(weapon)
 
-        check_bullet_obstacle_collision(gameObj.bullet_list, obstacle_list, gameObj)
-        check_bullet_obstacle_collision(gameObj.bullet_list, enemy_list, gameObj)
+        check_bullet_obstacle_collision(game_mechanics_obj.bullet_list, obstacle_list, game_mechanics_obj)
+        check_bullet_obstacle_collision(game_mechanics_obj.bullet_list, enemy_list, game_mechanics_obj)
         check_player_obstacle_collision(player, obstacle_list)
         check_player_enemy_collision(player, enemy_list)
 
         for enemy in enemy_list:
             enemy.move_towards_player(player.rect)
-        for bullet in gameObj.bullet_list:
+        for bullet in game_mechanics_obj.bullet_list:
             bullet.move()
             if bullet.rect.y < 0 or bullet.rect.x < 0 or bullet.rect.x > s.WIDTH or bullet.rect.y > s.HEIGHT:
-                gameObj.bullet_list.remove(bullet)
+                game_mechanics_obj.bullet_list.remove(bullet)
         if len(enemy_list) == 0:
-            enemy_list = generate_enemies(min_enemy, max_enemy)
-            gameObj.wave_count += 1
-        draw(player, weapon, gameObj.bullet_list, obstacle_list, enemy_list, gameObj)
+            enemy_list = game_mechanics_obj.generate_enemies()
+            game_mechanics_obj.wave_count += 1
+        draw(player, weapon, game_mechanics_obj.bullet_list, obstacle_list, enemy_list, game_mechanics_obj)
         if player.current_health <= 0:
             time.sleep(3)
             print("Game Over")

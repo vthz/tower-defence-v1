@@ -1,5 +1,8 @@
 import pygame
 from config import settings as s
+import random
+
+player_color_list = ["red", "green", "blue", "orange"]
 
 
 class Player:
@@ -8,6 +11,7 @@ class Player:
         self.vel = vel
         self.move = True
         self.current_health = 100
+        self.player_color = player_color_list[random.randint(0, len(player_color_list)-1)]
 
     def move_player(self):
         keys = pygame.key.get_pressed()
