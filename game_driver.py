@@ -5,77 +5,19 @@ import random
 import pygame
 from config import settings as s
 
+from source.Player import Player
+from source.Weapon import Weapon
+from source.Enemy import Enemy
+from source.Bullet import Bullet
+from source.Obstacle import Obstacle
+
 pygame.font.init()
 
 WIN = pygame.display.set_mode((s.WIDTH, s.HEIGHT))
 WIN_BG = pygame.transform.scale(pygame.image.load("assets/background/bg_black.png"), (s.WIDTH, s.HEIGHT))
 HEART_ICON = pygame.transform.scale(pygame.image.load("assets/icons/heart_icon.png"), (20, 20))
-
-pygame.display.set_caption("Wave Defence v1")
-
-
-class Player:
-    def __init__(self, x, y, vel=s.PLAYER_VEL):
-        self.rect = pygame.Rect(x, y, s.PLAYER_WIDTH, s.PLAYER_HEIGHT)
-        self.vel = vel
-        self.move = True
-        self.current_health = 100
-
-    def move_player(self):
-        keys = pygame.key.get_pressed()
-        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and self.rect.x - s.PLAYER_VEL >= 0:
-            self.rect.x -= s.PLAYER_VEL
-        if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and self.rect.x + s.PLAYER_VEL <= s.WIDTH - s.PLAYER_WIDTH:
-            self.rect.x += s.PLAYER_VEL
-        if (keys[pygame.K_UP] or keys[pygame.K_w]) and self.rect.y - s.PLAYER_VEL >= 0:
-            self.rect.y -= s.PLAYER_VEL
-        if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and self.rect.y + s.PLAYER_VEL <= s.HEIGHT - s.PLAYER_HEIGHT:
-            self.rect.y += s.PLAYER_VEL
-
-
-class Weapon:
-    def __init__(self, x, y, vel=s.PLAYER_VEL):
-        self.rect = pygame.Rect(x, y, s.WEAPON_WIDTH, s.WEAPON_HEIGHT)
-        self.vel = vel
-
-
-class Bullet:
-    def __init__(self, x, y, angle, vel):
-        self.original_image = pygame.Surface((s.BULLET_WIDTH, s.BULLET_HEIGHT), pygame.SRCALPHA)
-        pygame.draw.rect(self.original_image, "blue", (0, 0, s.BULLET_WIDTH, s.BULLET_HEIGHT))
-        self.image = pygame.transform.rotate(self.original_image, angle)
-        self.rect = self.image.get_rect(center=(x, y))
-        self.vel = vel
-        self.total_damage = 20
-
-    def move(self):
-        self.rect.x += self.vel[0]
-        self.rect.y += self.vel[1]
-
-
-class Obstacle:
-    def __init__(self, x, y, model_id):
-        self.rect = pygame.Rect(x, y, s.BOX_WIDTH, s.BOX_HEIGHT)
-        self.model_id = model_id
-        self.hit_points = 100
-        self.destruction_points = 5
-
-
-class Enemy:
-    def __init__(self, x, y, model_id, vel=s.ENEMY_VEL):
-        self.rect = pygame.Rect(x, y, s.BOX_WIDTH, s.BOX_HEIGHT)
-        self.model_id = model_id
-        self.hit_points = 50
-        self.vel = vel
-        self.max_damage = 10
-        self.destruction_points = 10
-
-    def move_towards_player(self, player_rect):
-        angle = math.atan2(player_rect.centery - self.rect.centery, player_rect.centerx - self.rect.centerx)
-        vel_x = self.vel * math.cos(angle)
-        vel_y = self.vel * math.sin(angle)
-        self.rect.x += vel_x
-        self.rect.y += vel_y
+FONT = pygame.font.SysFont("comicsans", 30)
+pygame.display.set_caption("Wave Defence v1-18nov23")
 
 
 class GameMechanics:
@@ -141,16 +83,13 @@ def check_player_enemy_collision(player, enemy_list):
             player.current_health -= enemy.max_damage
 
 
-FONT = pygame.font.SysFont("comicsans", 30)
-
-
 def draw(player, weapon, bullet_list, obstacle_list, enemy_list, gameObj):
     WIN.blit(WIN_BG, (0, 0))
     score_text = FONT.render(f"$:{gameObj.current_score}", 1, "white")
     WIN.blit(score_text, (10, 10))
-    enemy_count_text = FONT.render(f"Enemy:{len(enemy_list)}  Wave:{gameObj.wave_count}", 1, "white")
-    WIN.blit(enemy_count_text, ((s.WIDTH//2 - enemy_count_text.get_width()//2) , 10))
-    health_text = FONT.render(f"{max(0,player.current_health)}", 1, "white")
+    # enemy_count_text = FONT.render(f"Enemy:{len(enemy_list)}  Wave:{gameObj.wave_count}", 1, "white")
+    # WIN.blit(enemy_count_text, ((s.WIDTH // 2 - enemy_count_text.get_width() // 2), 10))
+    health_text = FONT.render(f"{max(0, player.current_health)}", 1, "white")
     WIN.blit(health_text, (s.WIDTH - len(str(player.current_health) * 20), 10))
     WIN.blit(HEART_ICON, (s.WIDTH - len(str(player.current_health) * 20) - 25, 25))
     pygame.draw.rect(WIN, "white", player)
